@@ -17,6 +17,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 access_key = os.getenv("UPBIT_ACCESS_KEY")
 secret_key = os.getenv("UPBIT_SECRET_KEY")
 
+# API 키가 없는 경우 예외 처리
 if not access_key or not secret_key:
     raise ValueError("API 키가 설정되지 않았습니다. .env 파일을 확인하세요.")
 
@@ -73,13 +74,7 @@ def check_and_buy():
             start_time = time.time()  # 매수 판단 시작 시간 기록
 
             # 계좌 잔액 확인
-            krw_balance = upbit.get_balance("KRW")
-            if krw_balance is None:
-                logging.error("KRW 잔액을 가져올 수 없습니다.")
-                time.sleep(1)
-                continue
-
-            krw_balance = float(krw_balance)
+            krw_balance = float(upbit.get_balance("KRW"))
             logging.info(f"현재 원화 잔액: {krw_balance} KRW")
             message_printed = True
 
@@ -90,7 +85,7 @@ def check_and_buy():
                 sell_executed.clear()  # 매도 체결 후 플래그 초기화
                 continue
 
-            # 거래량 상위 15개 코인 선택
+            # 거래량 상위 35개 코인 선택
             tickers = pyupbit.get_tickers(fiat="KRW")
             volumes = {}
 
@@ -108,14 +103,14 @@ def check_and_buy():
                     except Exception as e:
                         logging.warning(f"{ticker}에 대한 데이터를 가져오는 중 오류 발생: {e}")
 
-            # 상위 15개 티커 선택
-            top_15_tickers = sorted(volumes, key=volumes.get, reverse=True)[:15]
+            # 상위 35개 티커 선택
+            top_35_tickers = sorted(volumes, key=volumes.get, reverse=True)[:35]
 
             # 5분 내 1% 이상 상승한 코인 필터링
             rising_1_percent = []
             with ThreadPoolExecutor(max_workers=10) as executor:
                 future_to_ticker = {executor.submit(get_ohlcv_with_retry, ticker, "minute5"): ticker for ticker in
-                                    top_15_tickers}
+                                    top_35_tickers}
                 for future in as_completed(future_to_ticker):
                     ticker = future_to_ticker[future]
                     try:
@@ -190,7 +185,7 @@ def check_and_buy():
             message_printed = True
 
 
-# 1.75% 이상 상승 시 1.45%로 매도하는 함수
+# 1.75% 이상 상승 시 1.5%로 매도하는 함수
 def check_and_sell_increase():
     global message_printed
     global last_no_sell_message_time
@@ -225,8 +220,8 @@ def check_and_sell_increase():
                         if current_price is not None:
                             # 현재 가격이 매수가 대비 1.75% 상승했는지 확인
                             if current_price >= avg_buy_price * 1.0175:
-                                # 매도 주문 설정: 매수가격의 1.0145배
-                                target_sell_price = avg_buy_price * 1.0145
+                                # 매도 주문 설정: 매수가격의 1.015배
+                                target_sell_price = avg_buy_price * 1.015
                                 # 가격을 소수점 이하 2자리까지로 포맷팅
                                 target_sell_price = round(target_sell_price, 2)
                                 logging.info(f"{ticker} 매도 주문 실행! 목표가: {target_sell_price}")
@@ -257,7 +252,7 @@ def check_and_sell_increase():
             message_printed = True
 
 
-# 3.5% 이상 하락 시 매도하는 함수
+# 2.75% 이상 하락 시 매도하는 함수
 def check_and_sell_decrease():
     global message_printed
     global last_no_sell_message_time
@@ -290,9 +285,9 @@ def check_and_sell_decrease():
                         current_price = pyupbit.get_current_price(ticker)
 
                         if current_price is not None:
-                            # 3.5% 이상 하락 시 매도
-                            if current_price <= avg_buy_price * 0.965:
-                                logging.info(f"{ticker} 매도 실행! (3.5% 이상 하락)")
+                            # 2.75% 이상 하락 시 매도
+                            if current_price <= avg_buy_price * 0.9725:
+                                logging.info(f"{ticker} 매도 실행! (2.75% 이상 하락)")
                                 sell_result = upbit.sell_market_order(ticker, balance['balance'])
                                 logging.info(f"매도 완료 - 티커: {ticker}, 결과: {sell_result}")
                                 message_printed = True
