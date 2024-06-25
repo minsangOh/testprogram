@@ -5,10 +5,10 @@ import logging
 import time
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dotenv import load_dotenv  # 추가
+from dotenv import load_dotenv
 
 # .env 파일에서 환경 변수 로드
-load_dotenv()  # 추가
+load_dotenv()
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -73,7 +73,13 @@ def check_and_buy():
             start_time = time.time()  # 매수 판단 시작 시간 기록
 
             # 계좌 잔액 확인
-            krw_balance = float(upbit.get_balance("KRW"))
+            krw_balance = upbit.get_balance("KRW")
+            if krw_balance is None:
+                logging.error("KRW 잔액을 가져올 수 없습니다.")
+                time.sleep(1)
+                continue
+
+            krw_balance = float(krw_balance)
             logging.info(f"현재 원화 잔액: {krw_balance} KRW")
             message_printed = True
 
