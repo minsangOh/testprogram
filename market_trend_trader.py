@@ -6,12 +6,44 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pyupbit
 from dotenv import load_dotenv
+from logging.handlers import TimedRotatingFileHandler
 
 # .env 파일에서 환경 변수 로드
 load_dotenv()
 
+# 로그 파일 저장 경로
+log_dir = "logs"
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)  # logs 디렉터리 생성
+
+# 로그 파일 이름 설정
+log_file = os.path.join(log_dir, "trading_log.log")
+
 # 로깅 설정
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# TimedRotatingFileHandler 설정: 매일 자정마다 새로운 로그 파일 생성
+handler = TimedRotatingFileHandler(log_file, when="midnight", interval=1, encoding="utf-8")
+handler.suffix = "%Y-%m-%d"  # 파일명에 일자 추가
+handler.setLevel(logging.INFO)
+
+# 로그 포맷 설정
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+# 파일 핸들러 추가
+logger.addHandler(handler)
+
+# 콘솔 출력 핸들러 설정
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
+# 테스트 로그 메시지
+logger.info("로그 파일이 일자별로 생성됩니다.")
+
 
 # 환경 변수에서 API 키 읽기
 access_key = os.getenv("UPBIT_ACCESS_KEY")
@@ -155,7 +187,6 @@ def trading_strategy():
                 # owned_tickers = get_owned_tickers()  # 매수 시점마다 보유 중인 코인 수 확인
                 # logging.info(f"보유 코인 목록 {owned_tickers}")
 
-
             # 매도 로직
             for balance in upbit.get_balances():
                 if isinstance(balance, dict) and 'currency' in balance:
@@ -187,7 +218,7 @@ def trading_strategy():
                                 logging.info(f"{ticker} 매도 실행 - 하락장 손절")
                                 sell_result = upbit.sell_market_order(ticker, balance['balance'])
                                 logging.info(f"매도 완료 - 티커: {ticker}, 결과: {sell_result}")
-                        #횡보장
+                        # 횡보장
                         elif market_trend == "sideways":
                             if current_price <= avg_buy_price * 0.98:  # 3% 손절 시 매도
                                 logging.info(f"{ticker} 매도 실행 - 하락장 손절")
