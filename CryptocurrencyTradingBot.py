@@ -80,9 +80,10 @@ def check_and_buy():
 
             # 잔고가 5500원보다 적으면 매수하지 않고 매도가 체결될 때까지 대기
             if krw_balance < 5500:
-                logging.info("잔고가 부족하여 매수를 대기합니다.")
-                sell_executed.wait()  # 매도 체결될 때까지 대기
-                sell_executed.clear()  # 매도 체결 후 플래그 초기화
+                logging.info("잔고가 부족하여 매수를 포기합니다.")
+                # logging.info("잔고가 부족하여 매수를 대기합니다.")
+                # sell_executed.wait()  # 매도 체결될 때까지 대기
+                # sell_executed.clear()  # 매도 체결 후 플래그 초기화
                 continue
 
             # 거래량 상위 35개 코인 선택
