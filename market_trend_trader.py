@@ -134,7 +134,7 @@ def trading_strategy():
             if buy_candidates:
                 for ticker in buy_candidates:
                     owned_tickers = get_owned_tickers()  # 매수 시점마다 보유 중인 코인 수 확인
-                    if len(owned_tickers) >= 9:  # 최대 9개의 코인만 보유
+                    if len(owned_tickers) >= 13:  # 최대 13개의 코인만 보유
                         logging.info("최대 보유 코인 수에 도달하여 매수를 중지합니다.")
                         break
 
@@ -152,6 +152,9 @@ def trading_strategy():
                     logging.info(f"매수 완료 - 티커: {ticker}, 결과: {buy_result}")
             else:
                 logging.info("매수 없음")
+                owned_tickers = get_owned_tickers()  # 매수 시점마다 보유 중인 코인 수 확인
+                logging.info(f"보유 코인 목록 {owned_tickers}")
+
 
             # 매도 로직
             for balance in upbit.get_balances():
