@@ -168,25 +168,34 @@ def trading_strategy():
                         current_price = pyupbit.get_current_price(ticker)
 
                         # 매도 조건 - 시장 상황에 따라 다르게 설정
-                        if market_trend == "bull":  # 상승장
+                        # 상승장
+                        if market_trend == "bull":
                             if current_price >= avg_buy_price * 1.05:  # 5% 수익 시 매도
                                 logging.info(f"{ticker} 매도 실행 - 상승장 목표 수익 달성")
                                 sell_result = upbit.sell_market_order(ticker, balance['balance'])
                                 logging.info(f"매도 완료 - 티커: {ticker}, 결과: {sell_result}")
-
-                        elif market_trend == "bear":  # 하락장
+                        # 하락장
+                        elif market_trend == "bear":
                             if current_price <= avg_buy_price * 0.98:  # 2% 손절 시 매도
                                 logging.info(f"{ticker} 매도 실행 - 하락장 손절")
                                 sell_result = upbit.sell_market_order(ticker, balance['balance'])
                                 logging.info(f"매도 완료 - 티커: {ticker}, 결과: {sell_result}")
-
-                        elif market_trend == "sideways":  # 횡보장
-                            if current_price >= avg_buy_price * 1.02:  # 2% 수익 시 매도
-                                logging.info(f"{ticker} 매도 실행 - 횡보장 목표 수익 달성")
+                            elif current_price >= avg_buy_price * 1.02:  # 2% 수익 시 매도
+                                logging.info(f"{ticker} 매도 실행 - 하락장 손절")
+                                sell_result = upbit.sell_market_order(ticker, balance['balance'])
+                                logging.info(f"매도 완료 - 티커: {ticker}, 결과: {sell_result}")
+                        #횡보장
+                        elif market_trend == "sideways":
+                            if current_price <= avg_buy_price * 0.98:  # 3% 손절 시 매도
+                                logging.info(f"{ticker} 매도 실행 - 하락장 손절")
+                                sell_result = upbit.sell_market_order(ticker, balance['balance'])
+                                logging.info(f"매도 완료 - 티커: {ticker}, 결과: {sell_result}")
+                            elif current_price >= avg_buy_price * 1.02:  # 3% 수익 시 매도
+                                logging.info(f"{ticker} 매도 실행 - 하락장 손절")
                                 sell_result = upbit.sell_market_order(ticker, balance['balance'])
                                 logging.info(f"매도 완료 - 티커: {ticker}, 결과: {sell_result}")
 
-            time.sleep(2)
+                time.sleep(2)
 
         except Exception as e:
             logging.error(f"매수 및 매도 판단 중 오류 발생: {e}")
