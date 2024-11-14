@@ -177,13 +177,14 @@ def buy_strategy():
 
 # 매도 전략 함수: 매도 조건을 판단하여 보유 코인을 매도
 def sell_strategy():
+    fee = 1.0005  # 수수료 0.05%
     while True:
         try:
             for balance in upbit.get_balances():
                 if isinstance(balance, dict) and 'currency' in balance and balance['currency'] != 'KRW':
                     ticker = f"KRW-{balance['currency']}"  # 보유 중인 코인 티커
                     balance_amount = float(balance['balance'])  # 보유 수량
-                    avg_buy_price = float(balance['avg_buy_price'])  # 평균 매수 가격
+                    avg_buy_price = float(balance['avg_buy_price']) * fee  # 평균 매수 가격
                     if balance_amount < 0.0001 or avg_buy_price == 0:
                         continue  # 보유 수량이 너무 적거나 평균 매수 가격이 없는 경우 건너뜀
 
