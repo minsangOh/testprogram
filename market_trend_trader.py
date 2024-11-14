@@ -125,7 +125,7 @@ def buy_strategy():
             krw_balance = float(upbit.get_balance("KRW"))  # 잔고 확인
             if krw_balance < 5500:  # 잔고가 부족하면 매수 포기
                 logging.info("잔고 부족으로 매수 포기")
-                time.sleep(1)
+                time.sleep(2)
                 continue
 
             tickers = pyupbit.get_tickers(fiat="KRW")  # 모든 티커 가져오기
@@ -171,7 +171,7 @@ def buy_strategy():
                     logging.info(f"매수할 코인: {ticker}")
                     buy_result = upbit.buy_market_order(ticker, 5500)
                     logging.info(f"매수 완료 - 티커: {ticker}, 결과: {buy_result}")
-            time.sleep(1)
+            time.sleep(2)
 
         except Exception as e:
             logging.error(f"매수 전략 중 오류 발생: {e}")
@@ -204,9 +204,9 @@ def sell_strategy():
                                 logging.info(f"{ticker} 매도 실행 - 트렌드: {trend}, 손절")
                             sell_result = upbit.sell_market_order(ticker, balance['balance'])
                             logging.info(f"매도 완료 - 티커: {ticker}, 결과: {sell_result}")
-                    time.sleep(1)
+                    time.sleep(2)
 
-            time.sleep(1)
+            time.sleep(2)
 
         except Exception as e:
             logging.error(f"매도 전략 중 오류 발생: {e}")
