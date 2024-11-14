@@ -76,9 +76,9 @@ def is_sell_condition(current_price, avg_buy_price, trend):
         elif current_price <= avg_buy_price * 0.995:  # 0.5% 이하 하락 시 손실
             return "loss"
     elif trend == "bear":
-        if current_price <= avg_buy_price * 0.99:  # 1% 이하 하락 시 손실
+        if current_price >= avg_buy_price * 1.002:  # 0.2% 이상 상승 시 수익 실현
             return "loss"
-        elif current_price >= avg_buy_price * 1.002:  # 0.2% 이상 상승 시 수익 실현
+        elif current_price <= avg_buy_price * 0.99:  # 1% 이하 하락 시 손실
             return "profit"
     elif trend == "sideways":
         if current_price >= avg_buy_price * 1.003:  # 0.3% 이상 상승 시 수익 실현
