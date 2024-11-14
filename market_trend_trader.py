@@ -65,7 +65,7 @@ def calculate_rsi(data, period=14):
 # 매수 조건 판단 함수: RSI 값이 특정 범위에 있을 때 매수 신호
 def is_buy_condition(data):
     recent_rsi = calculate_rsi(data)
-    return 40 <= recent_rsi <= 60  # RSI가 40과 60 사이일 때 매수
+    return 30 < recent_rsi <= 60  # RSI가 40과 60 사이일 때 매수
     # return recent_rsi >= 30 or recent_rsi <= 60 # RSI가 30 이하 이거나 60 이상일 때 매수
 
 # 매도 조건 판단 함수: 현재 가격과 평균 매입 가격을 비교하여 매도 신호
