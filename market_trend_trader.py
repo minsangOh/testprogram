@@ -192,13 +192,18 @@ def sell_strategy():
                         trend = determine_market_trend(ticker)  # 시장 트렌드 판단
                         sell_condition = is_sell_condition(current_price, avg_buy_price, trend)  # 매도 조건 판단
                         if sell_condition:
+                            # 수익 계산
+                            profit = (current_price - avg_buy_price) * balance_amount  # 수익 금액 계산
+                            profit_percentage = ((current_price - avg_buy_price) / avg_buy_price) * 100  # 수익률 계산
+
+                            # 매도 실행
                             if sell_condition == "profit":
                                 logging.info(f"{ticker} 매도 실행 - 트렌드: {trend}, 수익 실현")
                             elif sell_condition == "loss":
                                 logging.info(f"{ticker} 매도 실행 - 트렌드: {trend}, 손절")
                             sell_result = upbit.sell_market_order(ticker, balance['balance'])  # 시장가로 매도 주문 실행
                             # logging.info(f"매도 완료 - 티커: {ticker}, 결과: {sell_result}")
-                            logging.info(f"매도 완료 - 티커: {ticker}")
+                            logging.info(f"매도 완료 - 티커: {ticker}, 결과: {profit:.2f}원, 수익률: {profit_percentage:.2f}%")
                     time.sleep(11)
 
             time.sleep(11)
