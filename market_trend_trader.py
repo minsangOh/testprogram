@@ -128,7 +128,7 @@ def buy_strategy():
 
             krw_balance = float(upbit.get_balance("KRW"))  # KRW 잔고 조회
             if krw_balance < 5500:
-                logging.info("잔고 부족으로 매수 로직 생략")
+                # logging.info("잔고 부족으로 매수 로직 생략")
                 time.sleep(11)
                 continue
 
@@ -155,14 +155,14 @@ def buy_strategy():
                 for ticker in buy_candidates:
                     owned_tickers = get_owned_tickers()
                     if len(owned_tickers) >= 50:
-                        logging.info("최대 보유 코인 수 도달")
+                        # logging.info("최대 보유 코인 수 도달")
                         break
                     if ticker in owned_tickers:
-                        logging.info(f"이미 보유 중: {ticker}, 매수 건너뜀")
+                        # logging.info(f"이미 보유 중: {ticker}, 매수 건너뜀")
                         continue
                     krw_balance = float(upbit.get_balance("KRW"))
                     if krw_balance < 5500:
-                        logging.info(f"잔고 부족으로 {ticker} 매수 포기")
+                        # logging.info(f"잔고 부족으로 {ticker} 매수 포기")
                         break
                     logging.info(f"매수할 코인: {ticker}")
                     buy_result = upbit.buy_market_order(ticker, 5500)  # 시장가로 매수 주문 실행
