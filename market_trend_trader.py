@@ -208,6 +208,11 @@ def trading_strategy():
                                 logging.info(f"{ticker} 매도 실행 - 상승장 목표 수익 달성")
                                 sell_result = upbit.sell_market_order(ticker, balance['balance'])
                                 logging.info(f"매도 완료 - 티커: {ticker}, 결과: {sell_result}")
+                            elif current_price <= avg_buy_price * 0.97:  # 3% 손절 시 매도
+                                logging.info(f"{ticker} 매도 실행 - 하락장 손절")
+                                sell_result = upbit.sell_market_order(ticker, balance['balance'])
+                                logging.info(f"매도 완료 - 티커: {ticker}, 결과: {sell_result}")
+
                         # 하락장
                         elif market_trend == "bear":
                             if current_price <= avg_buy_price * 0.98:  # 2% 손절 시 매도
