@@ -94,8 +94,8 @@ def determine_market_trend(ticker):
     data = pyupbit.get_ohlcv(ticker, interval="minute1")  # 1분 간격 OHLCV 데이터 가져오기
     if data is None or data.empty:
         return "sideways"  # 데이터가 없으면 횡보로 간주
-    short_ma = data['close'].rolling(window=7).mean().iloc[-1]  # 3분 간격 이동 평균
-    long_ma = data['close'].rolling(window=21).mean().iloc[-1]  # 12분 간격 이동 평균
+    short_ma = data['close'].rolling(window=7).mean().iloc[-1]  # 7분 간격 이동 평균
+    long_ma = data['close'].rolling(window=21).mean().iloc[-1]  # 21분 간격 이동 평균
     if short_ma > long_ma:
         return "bull"  # 단기 MA가 장기 MA보다 크면 상승 추세
     elif short_ma < long_ma:
