@@ -83,7 +83,7 @@ def determine_market_trend(ticker):
     data = pyupbit.get_ohlcv(ticker, interval="minute5")
 
     if data is None or data.empty:
-        logging.warning(f"{ticker}의 시장 상황을 판단할 수 없음")
+        # logging.warning(f"{ticker}의 시장 상황을 판단할 수 없음")
         return "sideways"
 
     short_period = 12  # 12 * 5분 = 60분 이동평균선
@@ -134,7 +134,7 @@ def trading_strategy():
 
                         # 각 코인별 시장 상황 판단
                         market_trend = determine_market_trend(ticker)
-                        logging.info(f"{ticker}의 현재 시장 상황: {market_trend}")
+                        # logging.info(f"{ticker}의 현재 시장 상황: {market_trend}")
 
                         recent_rsi = calculate_rsi(df)
                         k_value, d_value = calculate_stochastic(df)
@@ -197,7 +197,7 @@ def trading_strategy():
 
                         # 각 코인별 시장 상황 판단
                         market_trend = determine_market_trend(ticker)
-                        logging.info(f"{ticker}의 현재 시장 상황: {market_trend}")
+                        # logging.info(f"{ticker}의 현재 시장 상황: {market_trend}")
 
                         # 매도 조건 - 시장 상황에 따라 다르게 설정
                         if market_trend == "bull":
