@@ -49,6 +49,10 @@ upbit = pyupbit.Upbit(access_key, secret_key)
 # 유효한 티커 리스트
 valid_tickers = pyupbit.get_tickers(fiat="KRW")
 
+# 계산 상수
+BUY_AMOUNT = 10000  # 매수 금액
+FEE_RATE = 0.0005  # 수수료율
+
 
 # RSI 계산 함수: 특정 주기의 가격 차이를 이용하여 상승/하락 강도를 계산
 def calculate_rsi(ticker, period=14):
@@ -79,16 +83,16 @@ def determine_market_trend(ticker):
 def is_buy_condition(ticker):
     market_trend = determine_market_trend(ticker)
     recent_rsi = calculate_rsi(ticker)
-    if 30 < recent_rsi <= 60 and market_trend == "bull":
+    if 30 <= recent_rsi <= 60 and market_trend == "bull":
         return True
     return False
 
 
 # 매도 조건 판단 함수: 현재 가격과 평균 매입 가격을 비교하여 매도 신호
 def is_sell_condition(current_price, avg_buy_price, trend):
-    fee = 1.0005  # 수수료 0.05%
+    global FEE_RATE
     cp = current_price
-    cost = avg_buy_price * fee
+    cost = avg_buy_price * (1 + FEE_RATE)  # 평균 매입 가격에 매수 수수료 포함
     if trend == "bull":
         if cp >= cost * 1.005:  # 0.5% 이상 상승 시 수익 실현
             return "profit"
@@ -131,9 +135,9 @@ def buy_strategy():
                 if data is None or data.empty:
                     continue
 
-                # 매수 조건 만족 시 5500원 매수
+                # 매수 조건 만족 시 매수
                 if is_buy_condition(data):
-                    response = upbit.buy_market_order(ticker, 5500)
+                    response = upbit.buy_market_order(ticker, BUY_AMOUNT)
                     logger.info(f"매수 완료: {response}")
                     time.sleep(0.5)
         except Exception as e:
@@ -167,17 +171,20 @@ def sell_strategy():
 
                 # 수익률 계산
                 volume = float(balance['balance'])
-                price = (current_price - avg_buy_price) * volume
-                percent = ((current_price / avg_buy_price) - 1) * 100
+                total_buy_cost = avg_buy_price * (1 + FEE_RATE) * volume  # 매수 비용
+                total_sell_revenue = current_price * (1 - FEE_RATE) * volume  # 매도 수익
+                net_profit = total_sell_revenue - total_buy_cost  # 순수익
+                profit_percent = (net_profit / total_buy_cost) * 100  # 수익률
+
 
                 # 매도 함수 실행
-                upbit.sell_market_order(ticker, float(balance['balance']))
+                upbit.sell_market_order(ticker, volume)
 
                 # 분기 별 로그 기록
                 if sell_condition == "profit":
-                    logger.info(f"수익 실현 매도 완료: {ticker}, 결과: {price:.2f}원, 수익률: {percent:.2f}%")
+                    logger.info(f"수익 실현 매도 완료: {ticker}, 순수익: {net_profit:.2f}원, 수익률: {profit_percent:.2f}%")
                 elif sell_condition == "loss":
-                    logger.info(f"손실 매도 완료: {ticker}, 결과: {price:.2f}원, 손실률: {percent:.2f}%")
+                    logger.info(f"손실 매도 완료: {ticker}, 순손실: {net_profit:.2f}원, 손실률: {profit_percent:.2f}%")
 
                 time.sleep(0.5)
 
