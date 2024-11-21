@@ -35,7 +35,7 @@ console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
-logger.info("초단기 매매 전략 시작")
+logger.info("단기 매매 전략 시작")
 
 # .env 파일에서 API 키 로드
 access_key = os.getenv("UPBIT_ACCESS_KEY")
@@ -51,8 +51,8 @@ valid_tickers = pyupbit.get_tickers(fiat="KRW")
 
 
 # RSI 계산 함수: 특정 주기의 가격 차이를 이용하여 상승/하락 강도를 계산
-def calculate_rsi(data, period=14):
-    delta = data['close'].diff()  # 가격 차이 계산
+def calculate_rsi(ticker, period=14):
+    delta = ticker['close'].diff()  # 가격 차이 계산
     gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()  # 상승 강도
     loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()  # 하락 강도
     rs = gain / loss  # 상승/하락 강도의 비율
@@ -76,9 +76,9 @@ def determine_market_trend(ticker):
 
 
 # 매수 조건 판단 함수: RSI가 30~60 사이이고 상승 추세일 때 매수 신호
-def is_buy_condition(data):
-    recent_rsi = calculate_rsi(data)
-    market_trend = determine_market_trend(data)
+def is_buy_condition(ticker):
+    market_trend = determine_market_trend(ticker)
+    recent_rsi = calculate_rsi(ticker)
     if 30 < recent_rsi <= 60 and market_trend == "bull":
         return True
     return False
@@ -109,12 +109,81 @@ def is_sell_condition(current_price, avg_buy_price, trend):
 
 # 매수 전략 함수: 매수 조건을 만족하는 코인을 찾아 매수
 def buy_strategy():
-    pass
+    while True:
+        try:
+            # 시장에 등록된 티커를 갱신 (12시간마다 실행)
+            global valid_tickers
+            if int(time.time()) % (12 * 60 * 60) == 0:  # 12시간 간격
+                valid_tickers = pyupbit.get_tickers(fiat="KRW")
+
+            # 내 계좌 정보 가져오기
+            balances = upbit.get_balances()
+            owned_coins = {balance['currency'] for balance in balances if float(balance['balance']) > 0}
+            if len(owned_coins) >= 35:
+                time.sleep(5)
+                continue
+
+            # 유효한 티커에서 OHLCV 데이터를 가져와 매수 조건 확인
+            for ticker in valid_tickers:
+                if ticker.split("-")[1] in owned_coins:  # 이미 보유한 코인 건너뛰기
+                    continue
+                data = pyupbit.get_ohlcv(ticker, interval="minute1")
+                if data is None or data.empty:
+                    continue
+
+                # 매수 조건 만족 시 5500원 매수
+                if is_buy_condition(data):
+                    response = upbit.buy_market_order(ticker, 5500)
+                    logger.info(f"매수 완료: {response}")
+                    time.sleep(0.5)
+        except Exception as e:
+            logger.error(f"매수 전략 오류: {e}")
+        time.sleep(1)
 
 
 # 매도 전략 함수: 매도 조건을 판단하여 보유 코인을 매도
 def sell_strategy():
-    pass
+    while True:
+        try:
+            # 내 계좌 정보 가져오기
+            balances = upbit.get_balances()
+            for balance in balances:
+                ticker = f"KRW-{balance['currency']}"
+
+                # 원화 또는 상장폐지, 보유량 0인 코인 건너뛰기
+                if balance['currency'] == "KRW" or balance['currency'] == "LUNC" or balance['currency'] == "APENFT" or \
+                        balance['currency'] == "LUNA2":
+                    continue
+                elif float(balance['balance']) <= 0:
+                    continue
+
+                # 현재 가격 및 평균 매수 가격 가져오기
+                current_price = pyupbit.get_current_price(ticker)
+                avg_buy_price = float(balance['avg_buy_price'])
+                trend = determine_market_trend(ticker)
+
+                # 매도 조건 확인
+                sell_condition = is_sell_condition(current_price, avg_buy_price, trend)
+
+                # 수익률 계산
+                volume = float(balance['balance'])
+                price = (current_price - avg_buy_price) * volume
+                percent = ((current_price / avg_buy_price) - 1) * 100
+
+                # 매도 함수 실행
+                upbit.sell_market_order(ticker, float(balance['balance']))
+
+                # 분기 별 로그 기록
+                if sell_condition == "profit":
+                    logger.info(f"수익 실현 매도 완료: {ticker}, 결과: {price:.2f}원, 수익률: {percent:.2f}%")
+                elif sell_condition == "loss":
+                    logger.info(f"손실 매도 완료: {ticker}, 결과: {price:.2f}원, 손실률: {percent:.2f}%")
+
+                time.sleep(0.5)
+
+        except Exception as e:
+            logger.error(f"매도 전략 오류: {e}")
+        time.sleep(1)
 
 
 # 메인 함수: 매수와 매도 전략을 별도의 스레드로 실행
