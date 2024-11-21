@@ -176,7 +176,6 @@ def sell_strategy():
                 net_profit = total_sell_revenue - total_buy_cost  # 순수익
                 profit_percent = (net_profit / total_buy_cost) * 100  # 수익률
 
-
                 # 매도 함수 실행
                 upbit.sell_market_order(ticker, volume)
 
