@@ -79,11 +79,15 @@ def determine_market_trend(ticker):
         return "sideways"  # MA가 같으면 횡보 추세
 
 
-# 매수 조건 판단 함수: RSI가 30~60 사이이고 상승 추세일 때 매수 신호
+# 매수 조건 판단 함수: RSI가 30~60 사이이고 상승 또는 횡보 추세일 때 매수
 def is_buy_condition(ticker):
     market_trend = determine_market_trend(ticker)
     recent_rsi = calculate_rsi(ticker)
-    if 30 <= recent_rsi <= 60 and market_trend == "bull":
+    if 20 <= recent_rsi < 35 and market_trend in "bull":
+        return True
+    elif 35 <= recent_rsi < 60 and market_trend in "sideways":
+        return True
+    elif 60 <= recent_rsi < 75 and market_trend in "bear":
         return True
     return False
 
@@ -111,20 +115,33 @@ def is_sell_condition(current_price, avg_buy_price, trend):
     return None  # 매도 조건이 아니면 None 반환
 
 
-# 매수 전략 함수: 매수 조건을 만족하는 코인을 찾아 매수
+# 매수 함수: 매수 조건을 만족하는 코인을 찾아 매수
 def buy_strategy():
+    global BUY_AMOUNT
+    last_ticker_update = time.time()  # 마지막 티커 갱신 시간
     while True:
         try:
             # 시장에 등록된 티커를 갱신 (12시간마다 실행)
             global valid_tickers
-            if int(time.time()) % (12 * 60 * 60) == 0:  # 12시간 간격
+            if time.time() - last_ticker_update >= 12 * 60 * 60:  # 12시간 경과 시 갱신
                 valid_tickers = pyupbit.get_tickers(fiat="KRW")
+                last_ticker_update = time.time()
 
             # 내 계좌 정보 가져오기
             balances = upbit.get_balances()
             owned_coins = {balance['currency'] for balance in balances if float(balance['balance']) > 0}
             if len(owned_coins) >= 35:
                 time.sleep(5)
+                continue
+
+            # 원화 잔고 확인
+            krw_balance = 0.0
+            for balance in balances:
+                if balance['currency'] == "KRW":
+                    krw_balance = float(balance['balance'])
+
+            # 잔고 부족 시 매수 건너뛰기
+            if krw_balance < BUY_AMOUNT * (1 + FEE_RATE):
                 continue
 
             # 유효한 티커에서 OHLCV 데이터를 가져와 매수 조건 확인
@@ -137,15 +154,24 @@ def buy_strategy():
 
                 # 매수 조건 만족 시 매수
                 if is_buy_condition(data):
+                    # 다시 한 번 잔고 확인
+                    balances = upbit.get_balances()
+                    for balance in balances:
+                        if balance['currency'] == "KRW":
+                            krw_balance = float(balance['balance'])
+                            break
+                    if krw_balance < BUY_AMOUNT * (1 + FEE_RATE):
+                        continue
+                    # 매수 진행
                     response = upbit.buy_market_order(ticker, BUY_AMOUNT)
-                    logger.info(f"매수 완료: {response}")
+                    logger.info(f"매수 완료: {response['market']}")
                     time.sleep(0.5)
         except Exception as e:
             logger.error(f"매수 전략 오류: {e}")
         time.sleep(1)
 
 
-# 매도 전략 함수: 매도 조건을 판단하여 보유 코인을 매도
+# 매도 함수: 매도 조건을 판단하여 보유 코인을 매도
 def sell_strategy():
     while True:
         try:
@@ -176,13 +202,12 @@ def sell_strategy():
                 net_profit = total_sell_revenue - total_buy_cost  # 순수익
                 profit_percent = (net_profit / total_buy_cost) * 100  # 수익률
 
-                # 매도 함수 실행
-                upbit.sell_market_order(ticker, volume)
-
-                # 분기 별 로그 기록
+                # 분기 별 매도 및 로그
                 if sell_condition == "profit":
+                    upbit.sell_market_order(ticker, volume)
                     logger.info(f"수익 실현 매도 완료: {ticker}, 순수익: {net_profit:.2f}원, 수익률: {profit_percent:.2f}%")
                 elif sell_condition == "loss":
+                    upbit.sell_market_order(ticker, volume)
                     logger.info(f"손실 매도 완료: {ticker}, 순손실: {net_profit:.2f}원, 손실률: {profit_percent:.2f}%")
 
                 time.sleep(0.5)
